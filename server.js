@@ -10,14 +10,12 @@ const io = socketIo(server);
 // In-memory store for chat history
 const chatHistory = [];
 
-// Serve static files from the 'public' directory (if you have one)
-app.use(express.static(path.join(__dirname, 'public')));
-
 // Serve the index.html file from the root directory
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
+// Handle Socket.io connections
 io.on('connection', (socket) => {
   console.log('A user connected');
 
