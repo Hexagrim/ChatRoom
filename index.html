@@ -3,149 +3,93 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Simple Chat-by aayush parajuli</title>
+  <title>Chat Application</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      background-color: #f0f0f0;
       margin: 0;
       padding: 0;
-    }
-
-    .container {
       display: flex;
       flex-direction: column;
       height: 100vh;
-      max-width: 800px;
-      margin: 0 auto;
-      background: #fff;
-      border-radius: 8px;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
     }
-
-    header {
-      background: #007bff;
-      color: #fff;
-      padding: 10px 20px;
-      text-align: center;
-      border-top-left-radius: 8px;
-      border-top-right-radius: 8px;
-    }
-
-    main {
-      display: flex;
-      flex-direction: column;
-      flex: 1;
-      padding: 20px;
-    }
-
-    .messages {
+    #chat {
       flex: 1;
       overflow-y: auto;
-      border: 1px solid #ddd;
-      border-radius: 4px;
       padding: 10px;
-      background: #fafafa;
-      margin-bottom: 20px;
+      background-color: #f9f9f9;
     }
-
-    .messages li {
-      margin-bottom: 10px;
-      padding: 8px;
-      border-radius: 4px;
-      background: #e9ecef;
-    }
-
-    .name-form, .chat-form {
+    #message-form {
       display: flex;
-      margin-bottom: 20px;
+      padding: 10px;
+      background-color: #eee;
+      border-top: 1px solid #ddd;
     }
-
-    .name-form input, .chat-form input {
+    #message-form input {
+      flex: 1;
       padding: 10px;
       border: 1px solid #ccc;
       border-radius: 4px;
-      flex: 1;
       margin-right: 10px;
     }
-
-    .name-form button, .chat-form button {
-      padding: 10px 15px;
+    #message-form button {
+      padding: 10px;
       border: none;
       border-radius: 4px;
-      background: #007bff;
-      color: #fff;
+      background-color: #007bff;
+      color: white;
       cursor: pointer;
     }
-
-    .name-form button:disabled, .chat-form button:disabled {
-      background: #ccc;
-      cursor: not-allowed;
-    }
-
-    .name-form input:disabled {
-      background: #e9ecef;
+    #message-form button:hover {
+      background-color: #0056b3;
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <header>
-      <h1>Chat Room-By Aayush Parajuli</h1>
-    </header>
-    <main>
-      <div id="messages" class="messages"></div>
-      <form id="name-form" class="name-form">
-        <input id="name" autocomplete="off" placeholder="Enter your name" />
-        <button type="submit">Set Name</button>
-      </form>
-      <form id="form" class="chat-form">
-        <input id="input" autocomplete="off" placeholder="Type a message" />
-        <button type="submit">Send</button>
-      </form>
-    </main>
-  </div>
+  <div id="chat"></div>
+  <form id="message-form">
+    <input id="message-input" autocomplete="off" placeholder="Type your message here..." />
+    <button>Send</button>
+  </form>
+
+  <!-- Include Socket.io -->
   <script src="/socket.io/socket.io.js"></script>
   <script>
     const socket = io();
-    const form = document.getElementById('form');
-    const input = document.getElementById('input');
-    const messages = document.getElementById('messages');
-    const nameForm = document.getElementById('name-form');
-    const nameInput = document.getElementById('name');
-    let username = '';
 
-    nameForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      if (nameInput.value) {
-        username = nameInput.value;
-        nameInput.disabled = true;
-        nameForm.querySelector('button').disabled = true;
-      }
-    });
+    const chat = document.getElementById('chat');
+    const messageForm = document.getElementById('message-form');
+    const messageInput = document.getElementById('message-input');
 
-    form.addEventListener('submit', (e) => {
-      e.preventDefault();
-      if (input.value) {
-        socket.emit('chat message', { username, message: input.value });
-        input.value = '';
-      }
-    });
+    // Append messages to chat window
+    function appendMessage(username, message) {
+      const messageElement = document.createElement('div');
+      messageElement.textContent = `${username}: ${message}`;
+      chat.appendChild(messageElement);
+      chat.scrollTop = chat.scrollHeight; // Scroll to bottom
+    }
 
-    socket.on('chat message', ({ username, message }) => {
-      const item = document.createElement('li');
-      item.textContent = `${username || 'Anonymous'}: ${message}`;
-      messages.appendChild(item);
-      messages.scrollTop = messages.scrollHeight;
-    });
-
+    // Handle incoming chat history
     socket.on('chat history', (history) => {
       history.forEach(({ username, message }) => {
-        const item = document.createElement('li');
-        item.textContent = `${username || 'Anonymous'}: ${message}`;
-        messages.appendChild(item);
+        appendMessage(username, message);
       });
-      messages.scrollTop = messages.scrollHeight;
+    });
+
+    // Handle incoming chat messages
+    socket.on('chat message', ({ username, message }) => {
+      appendMessage(username, message);
+    });
+
+    // Handle form submission
+    messageForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+      const username = 'User'; // You can modify this to use actual user input
+      const message = messageInput.value;
+      if (message.trim()) {
+        socket.emit('chat message', { username, message });
+        messageInput.value = '';
+      }
     });
   </script>
 </body>
