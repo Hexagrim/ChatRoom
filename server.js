@@ -1,15 +1,22 @@
 const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
+const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
 const io = socketIo(server);
 
-app.use(express.static('public'));
-
 // In-memory store for chat history
 const chatHistory = [];
+
+// Serve static files from the 'public' directory (if you have one)
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Serve the index.html file from the root directory
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
+});
 
 io.on('connection', (socket) => {
   console.log('A user connected');
@@ -20,7 +27,7 @@ io.on('connection', (socket) => {
   socket.on('chat message', ({ username, message }) => {
     const chatMessage = { username, message };
     chatHistory.push(chatMessage);
-    io.emit('chat message', chatMessage);
+    io.emit('chat message', chatMessage); // Broadcast to all clients
   });
 
   socket.on('disconnect', () => {
