@@ -4,94 +4,58 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Chat Application</title>
-  <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
   <style>
-    body {
-      display: flex;
-      flex-direction: column;
-      height: 100vh;
-    }
-    #chat {
-      flex: 1;
-      overflow-y: auto;
-      padding: 10px;
-      background-color: #f9f9f9;
-    }
-    #message-form {
-      display: flex;
-      padding: 10px;
-      background-color: #eee;
-      border-top: 1px solid #ddd;
-    }
-    #message-form input {
-      flex: 1;
-      padding: 10px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      margin-right: 10px;
-    }
-    #message-form button {
-      padding: 10px;
-      border: none;
-      border-radius: 4px;
-      background-color: #007bff;
-      color: white;
-      cursor: pointer;
-    }
-    #message-form button:hover {
-      background-color: #0056b3;
-    }
+    body { font-family: Arial, sans-serif; }
+    #chat { border: 1px solid #ccc; padding: 10px; width: 300px; height: 400px; overflow-y: scroll; }
+    #message { width: 200px; }
+    .chat-message { margin-bottom: 10px; }
+    .username { font-weight: bold; }
   </style>
 </head>
 <body>
-  <div id="chat" class="container mt-3"></div>
-  <form id="message-form" class="container mb-3">
-    <input id="username" type="text" placeholder="Your name" required class="form-control mr-2" />
-    <input id="message-input" type="text" autocomplete="off" placeholder="Type your message here..." class="form-control mr-2" />
-    <button class="btn btn-primary">Send</button>
-  </form>
+  <div id="chat"></div>
+  <input id="username" type="text" placeholder="Enter your name">
+  <input id="message" type="text" placeholder="Type a message">
+  <button id="send">Send</button>
 
-  <!-- Include jQuery and Socket.io -->
-  <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
   <script src="/socket.io/socket.io.js"></script>
   <script>
-    $(document).ready(function() {
-      const socket = io();
+    const socket = io();
 
-      const chat = $('#chat');
-      const messageForm = $('#message-form');
-      const messageInput = $('#message-input');
-      const usernameInput = $('#username');
+    const chat = document.getElementById('chat');
+    const usernameInput = document.getElementById('username');
+    const messageInput = document.getElementById('message');
+    const sendButton = document.getElementById('send');
 
-      // Append messages to chat window
-      function appendMessage(username, message) {
-        const messageElement = $('<div></div>').text(`${username}: ${message}`);
-        chat.append(messageElement);
-        chat.scrollTop(chat.prop("scrollHeight")); // Scroll to bottom
+    function addMessage({ username, message }) {
+      const div = document.createElement('div');
+      div.classList.add('chat-message');
+      div.innerHTML = `<span class="username">${username}</span>: ${message}`;
+      chat.appendChild(div);
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    socket.on('chat history', (history) => {
+      history.forEach(addMessage);
+    });
+
+    socket.on('chat message', (msg) => {
+      addMessage(msg);
+    });
+
+    sendButton.addEventListener('click', () => {
+      const username = usernameInput.value;
+      const message = messageInput.value;
+      if (username && message) {
+        socket.emit('chat message', { username, message });
+        messageInput.value = '';
       }
+    });
 
-      // Handle incoming chat history
-      socket.on('chat history', (history) => {
-        history.forEach(({ username, message }) => {
-          appendMessage(username, message);
-        });
-      });
-
-      // Handle incoming chat messages
-      socket.on('chat message', ({ username, message }) => {
-        appendMessage(username, message);
-      });
-
-      // Handle form submission
-      messageForm.on('submit', (event) => {
-        event.preventDefault();
-        const username = usernameInput.val().trim();
-        const message = messageInput.val().trim();
-        if (username && message) {
-          socket.emit('chat message', { username, message });
-          messageInput.val('');
-        }
-      });
+    messageInput.addEventListener('keyup', (event) => {
+      if (event.key === 'Enter') {
+        sendButton.click();
+      }
     });
   </script>
 </body>
